@@ -80,42 +80,80 @@ export default function ReviewsPage() {
     <div className="max-w-3xl mx-auto px-4 py-10">
       <h1 className="text-2xl font-bold text-gray-800 text-center mb-8">Reviews</h1>
 
-      {/* 1) WRITING FORM — FIRST */}
+      {/* FORM FIRST */}
       <form
         onSubmit={submit}
         className="bg-white border border-pinky-200 rounded-2xl p-6 shadow-sm space-y-3 mb-10"
       >
         <h2 className="font-semibold text-gray-800">Leave a Review</h2>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label htmlFor="reviewer-name" className="block text-xs text-gray-500 mb-1">
+              Your name
+            </label>
+            <input
+              id="reviewer-name"
+              name="reviewer-name"
+              type="text"
+              autoComplete="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Your name"
+              required
+              className="w-full px-3 py-2 border border-pinky-200 rounded-xl text-sm"
+            />
+          </div>
+          <div>
+            <label htmlFor="reviewer-username" className="block text-xs text-gray-500 mb-1">
+              Username
+            </label>
+            <input
+              id="reviewer-username"
+              name="reviewer-username"
+              type="text"
+              autoComplete="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="@username"
+              required
+              className="w-full px-3 py-2 border border-pinky-200 rounded-xl text-sm"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor="reviewer-image-url" className="block text-xs text-gray-500 mb-1">
+            Image URL (optional)
+          </label>
           <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Your name"
-            required
-            className="px-3 py-2 border border-pinky-200 rounded-xl text-sm"
-          />
-          <input
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="@username"
-            required
-            className="px-3 py-2 border border-pinky-200 rounded-xl text-sm"
+            id="reviewer-image-url"
+            name="reviewer-image-url"
+            type="url"
+            autoComplete="url"
+            value={imageUrl}
+            onChange={(e) => setImageUrl(e.target.value)}
+            placeholder="Image URL (optional — leave blank for auto avatar)"
+            className="w-full px-3 py-2 border border-pinky-200 rounded-xl text-sm"
           />
         </div>
-        <input
-          value={imageUrl}
-          onChange={(e) => setImageUrl(e.target.value)}
-          placeholder="Image URL (optional — leave blank for auto avatar)"
-          className="w-full px-3 py-2 border border-pinky-200 rounded-xl text-sm"
-        />
-        <textarea
-          value={review}
-          onChange={(e) => setReview(e.target.value)}
-          placeholder="Your review…"
-          required
-          rows={3}
-          className="w-full px-3 py-2 border border-pinky-200 rounded-xl text-sm resize-none"
-        />
+
+        <div>
+          <label htmlFor="reviewer-feedback" className="block text-xs text-gray-500 mb-1">
+            Your review
+          </label>
+          <textarea
+            id="reviewer-feedback"
+            name="reviewer-feedback"
+            value={review}
+            onChange={(e) => setReview(e.target.value)}
+            placeholder="Your review…"
+            required
+            rows={3}
+            className="w-full px-3 py-2 border border-pinky-200 rounded-xl text-sm resize-none"
+          />
+        </div>
+
         <button
           type="submit"
           disabled={submitting}
@@ -125,7 +163,7 @@ export default function ReviewsPage() {
         </button>
       </form>
 
-      {/* 2) EXISTING REVIEWS — BELOW FORM */}
+      {/* REVIEWS BELOW */}
       <h2 className="font-semibold text-gray-800 mb-3">What people are saying</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {reviews.map((r) => (
