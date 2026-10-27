@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+@theme {
+  --color-pinky-50: #fff1f7;
+  --color-pinky-100: #ffe4ef;
+  --color-pinky-200: #fbcfe8;
+  --color-pinky-300: #f9a8d4;
+  --color-pinky-400: #f472b6;
+  --color-pinky-500: #ec4899;
+}
+
+html,
+body {
+  background: #ffffff;
+  color: #1f2937;
+}
+
+/* Pink corner accents */
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  width: 220px;
+  height: 220px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.85;
+}
+
+body::before {
+  top: 0;
+  left: 0;
+  background: radial-gradient(circle at top left, #fbcfe8 0%, transparent 70%);
+}
+
+body::after {
+  bottom: 0;
+  right: 0;
+  background: radial-gradient(circle at bottom right, #f9a8d4 0%, transparent 70%);
+}
+
+main,
+header,
+footer {
+  position: relative;
+  z-index: 1;
+}
