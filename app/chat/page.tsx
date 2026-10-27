@@ -1,9 +1,9 @@
 "use client";
-import { useState, useEffect } from "react";
 
+import { useState, useEffect } from "react";
 import type { PlanType } from "@/lib/types";
 
-type Step = "greeting" | "confirmPlan" | "dateTime" | "success";
+type Step = "greeting" | "confirmPlan" | "dateTime" | "payment" | "done";
 
 const plans: { type: PlanType; label: string; price: number }[] = [
     { type: "wedding", label: "Wedding", price: 220 },
@@ -14,13 +14,13 @@ const plans: { type: PlanType; label: string; price: number }[] = [
 
 export default function ChatPage() {
     const [step, setStep] = useState<Step>("greeting");
+    const [greeting, setGreeting] = useState("Hello, how can I help you?");
     const [selectedPlan, setSelectedPlan] = useState<(typeof plans)[0] | null>(null);
     const [eventDate, setEventDate] = useState("");
     const [eventTime, setEventTime] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [popup, setPopup] = useState(false);
-
-    const [greeting, setGreeting] = useState("Hello, how can I help you?");
+    const [paidMessage, setPaidMessage] = useState("");
 
     useEffect(() => {
         const hour = new Date().getHours();
@@ -49,7 +49,29 @@ export default function ChatPage() {
                     event_time: eventTime,
                 }),
             });
-            setStep("success");
+            setStep("payment");
+        } finally {
+            setSubmitting(false);
+        }
+    }
+
+    async function handlePayment(paid: boolean) {
+        setSubmitting(true);
+        try {
+            await fetch("/api/availability", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    date: eventDate,
+                    status: paid ? "busy" : "free",
+                }),
+            });
+            setPaidMessage(
+                paid
+                    ? "Thank you for your payment! Your date is now marked as booked (pink) in the calendar."
+                    : "No worries! Your date stays available (green). You can pay later from your email link."
+            );
+            setStep("done");
         } finally {
             setSubmitting(false);
         }
@@ -126,15 +148,38 @@ export default function ChatPage() {
                     </>
                 )}
 
-                {step === "success" && (
+                {/* Payment choice after booking */}
+                {step === "payment" && (
                     <>
                         <Bubble role="ai">
-                            Thank you! We sent the link to your email. Please check for payment
-                            instructions. Thank you for visiting!
+                            Thank you! We sent the payment link to your email. Please check for
+                            payment instructions. Have you completed the payment?
                         </Bubble>
+                        <div className="flex flex-col sm:flex-row gap-3">
+                            <button
+                                onClick={() => handlePayment(true)}
+                                disabled={submitting}
+                                className="flex-1 py-3 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-semibold rounded-xl shadow-md"
+                            >
+                                Yes, I paid
+                            </button>
+                            <button
+                                onClick={() => handlePayment(false)}
+                                disabled={submitting}
+                                className="flex-1 py-3 bg-gray-400 hover:bg-gray-500 disabled:opacity-50 text-white font-semibold rounded-xl shadow-md"
+                            >
+                                No, not yet
+                            </button>
+                        </div>
+                    </>
+                )}
+
+                {/* Final confirmation */}
+                {step === "done" && (
+                    <>
+                        <Bubble role="ai">{paidMessage}</Bubble>
                         <p className="text-xs text-gray-400 text-center pt-4">
-                            (For demo: booking saved to Supabase. In production, integrate email
-                            delivery.)
+                            Thank you for visiting Pinky Planning Assistant.
                         </p>
                     </>
                 )}
@@ -147,8 +192,8 @@ function Bubble({ role, children }: { role: "ai" | "user"; children: React.React
     return (
         <div
             className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm whitespace-pre-wrap ${role === "user"
-                ? "bg-pinky-200 text-gray-800 ml-auto rounded-br-sm"
-                : "bg-gray-100 text-gray-800 rounded-bl-sm"
+                    ? "bg-pinky-200 text-gray-800 ml-auto rounded-br-sm"
+                    : "bg-gray-100 text-gray-800 rounded-bl-sm"
                 }`}
         >
             {children}
