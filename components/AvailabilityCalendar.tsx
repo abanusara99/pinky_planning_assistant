@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 
 interface DayCell {
     date: Date;
@@ -26,7 +25,6 @@ function fmt(d: Date) {
 }
 
 export default function AvailabilityCalendar({ busyDates, onToggle }: Props) {
-    const router = useRouter();
     const [offset, setOffset] = useState(0);
     // Base year/month as a stable placeholder; real value set after mount.
     const [base, setBase] = useState<{ year: number; month: number } | null>(null);
@@ -87,13 +85,13 @@ export default function AvailabilityCalendar({ busyDates, onToggle }: Props) {
             onToggle!(cell.key);
             return;
         }
-        // User mode: route to the chat booking form.
+        // User mode: hard navigation so it reliably works on Vercel.
         if (cell.isWednesday) {
-            router.push(`/chat?date=${cell.key}&closed=1`);
+            window.location.href = `/chat?date=${cell.key}&closed=1`;
         } else if (cell.status === "busy") {
-            router.push(`/chat?date=${cell.key}&busy=1`);
+            window.location.href = `/chat?date=${cell.key}&busy=1`;
         } else {
-            router.push(`/chat?date=${cell.key}`);
+            window.location.href = `/chat?date=${cell.key}`;
         }
     }
 
