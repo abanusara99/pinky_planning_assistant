@@ -25,10 +25,10 @@ function fmt(d: Date) {
 
 export default function AvailabilityCalendar({ busyDates, onToggle }: Props) {
     const [offset, setOffset] = useState(0);
-    const today = useMemo(() => new Date(), []);
 
     const { monthLabel, cells } = useMemo(() => {
-        const ref = new Date(today.getFullYear(), today.getMonth() + offset, 1);
+        const now = new Date();
+        const ref = new Date(now.getFullYear(), now.getMonth() + offset, 1);
         const year = ref.getFullYear();
         const month = ref.getMonth();
         const firstDay = new Date(year, month, 1).getDay();
@@ -46,11 +46,12 @@ export default function AvailabilityCalendar({ busyDates, onToggle }: Props) {
                 status: busyDates.includes(key) ? "busy" : "free",
             });
         }
+
         return {
             monthLabel: ref.toLocaleString("en-US", { month: "long", year: "numeric" }),
             cells: list,
         };
-    }, [offset, busyDates, today]);
+    }, [offset, busyDates]);
 
     function colorClass(cell: DayCell) {
         if (cell.isWednesday) return "bg-red-500 text-white cursor-not-allowed";
@@ -66,6 +67,7 @@ export default function AvailabilityCalendar({ busyDates, onToggle }: Props) {
                     <button
                         onClick={() => setOffset((o) => o - 1)}
                         className="px-2 py-1 text-xs border border-pinky-200 rounded-lg hover:bg-pinky-50"
+                        aria-label="Previous month"
                     >
                         ‹
                     </button>
@@ -75,6 +77,7 @@ export default function AvailabilityCalendar({ busyDates, onToggle }: Props) {
                     <button
                         onClick={() => setOffset((o) => o + 1)}
                         className="px-2 py-1 text-xs border border-pinky-200 rounded-lg hover:bg-pinky-50"
+                        aria-label="Next month"
                     >
                         ›
                     </button>
