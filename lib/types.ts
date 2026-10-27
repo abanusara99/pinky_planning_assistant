@@ -6,6 +6,10 @@ export interface Booking {
     plan_price: number;
     event_date: string;
     event_time: string;
+    /** Couple name / special person name / event name — depends on plan type */
+    main_name?: string | null;
+    /** Free-text preferences (theme, colors, must-haves) */
+    preferences?: string | null;
     created_at?: string;
 }
 

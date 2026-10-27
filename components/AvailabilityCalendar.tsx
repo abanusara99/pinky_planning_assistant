@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface DayCell {
     date: Date;
@@ -11,7 +12,8 @@ interface DayCell {
 
 interface Props {
     busyDates: string[];
-    onToggle: (date: string) => void;
+    /** Optional. If provided, clicks toggle busy/free (admin mode). If omitted, clicks navigate to /chat. */
+    onToggle?: (date: string) => void;
 }
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -24,9 +26,11 @@ function fmt(d: Date) {
 }
 
 export default function AvailabilityCalendar({ busyDates, onToggle }: Props) {
+    const router = useRouter();
     const [offset, setOffset] = useState(0);
-    // Base year/month start as a stable placeholder; real value set after mount.
+    // Base year/month as a stable placeholder; real value set after mount.
     const [base, setBase] = useState<{ year: number; month: number } | null>(null);
+    const [tooltip, setTooltip] = useState<string | null>(null);
 
     useEffect(() => {
         const now = new Date();
@@ -34,9 +38,8 @@ export default function AvailabilityCalendar({ busyDates, onToggle }: Props) {
     }, []);
 
     const { monthLabel, cells } = useMemo(() => {
-        if (!base) {
-            return { monthLabel: "", cells: [] as (DayCell | null)[] };
-        }
+        if (!base) return { monthLabel: "", cells: [] as (DayCell | null)[] };
+
         const ref = new Date(base.year, base.month + offset, 1);
         const year = ref.getFullYear();
         const month = ref.getMonth();
@@ -62,10 +65,36 @@ export default function AvailabilityCalendar({ busyDates, onToggle }: Props) {
         };
     }, [base, offset, busyDates]);
 
+    const isAdmin = typeof onToggle === "function";
+
     function colorClass(cell: DayCell) {
-        if (cell.isWednesday) return "bg-red-500 text-white cursor-not-allowed";
+        if (cell.isWednesday) return "bg-red-500 text-white cursor-pointer";
         if (cell.status === "busy") return "bg-pinky-400 text-white cursor-pointer";
         return "bg-green-500 text-white cursor-pointer";
+    }
+
+    function tooltipFor(cell: DayCell) {
+        if (cell.isWednesday) return "Company holiday — closed";
+        if (cell.status === "busy")
+            return isAdmin ? "Busy — click to free" : "Busy day — already booked";
+        return isAdmin ? "Free — click to mark busy" : "Free — booking available";
+    }
+
+    function handleClick(cell: DayCell) {
+        if (isAdmin) {
+            // Admin mode: Wednesdays are locked, others toggle.
+            if (cell.isWednesday) return;
+            onToggle!(cell.key);
+            return;
+        }
+        // User mode: route to the chat booking form.
+        if (cell.isWednesday) {
+            router.push(`/chat?date=${cell.key}&closed=1`);
+        } else if (cell.status === "busy") {
+            router.push(`/chat?date=${cell.key}&busy=1`);
+        } else {
+            router.push(`/chat?date=${cell.key}`);
+        }
     }
 
     return (
@@ -95,7 +124,10 @@ export default function AvailabilityCalendar({ busyDates, onToggle }: Props) {
 
             <div className="grid grid-cols-7 gap-1 mb-1">
                 {WEEKDAYS.map((d) => (
-                    <div key={d} className="text-center text-[10px] font-semibold text-gray-500 py-1">
+                    <div
+                        key={d}
+                        className="text-center text-[10px] font-semibold text-gray-500 py-1"
+                    >
                         {d}
                     </div>
                 ))}
@@ -109,34 +141,38 @@ export default function AvailabilityCalendar({ busyDates, onToggle }: Props) {
                     : cells.map((cell, i) => {
                         if (!cell) return <div key={`empty-${i}`} />;
                         return (
-                            <button
-                                key={cell.key}
-                                disabled={cell.isWednesday}
-                                onClick={() => !cell.isWednesday && onToggle(cell.key)}
-                                className={`aspect-square rounded-lg text-xs font-semibold flex items-center justify-center transition ${colorClass(cell)}`}
-                                title={
-                                    cell.isWednesday
-                                        ? "Closed on Wednesdays"
-                                        : cell.status === "busy"
-                                            ? "Busy — click to free"
-                                            : "Free — click to mark busy"
-                                }
-                            >
-                                {cell.date.getDate()}
-                            </button>
+                            <div key={cell.key} className="relative">
+                                <button
+                                    onClick={() => handleClick(cell)}
+                                    onMouseEnter={() =>
+                                        setTooltip(`${cell.key}|${tooltipFor(cell)}`)
+                                    }
+                                    onMouseLeave={() => setTooltip(null)}
+                                    disabled={isAdmin && cell.isWednesday}
+                                    className={`w-full aspect-square rounded-lg text-xs font-semibold flex items-center justify-center transition ${colorClass(cell)}`}
+                                    aria-label={tooltipFor(cell)}
+                                >
+                                    {cell.date.getDate()}
+                                </button>
+                                {tooltip?.startsWith(cell.key + "|") && (
+                                    <div className="absolute z-20 -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md shadow-lg pointer-events-none">
+                                        {tooltip.split("|")[1]}
+                                    </div>
+                                )}
+                            </div>
                         );
                     })}
             </div>
 
             <div className="flex flex-wrap gap-3 mt-3 text-[11px] text-gray-600">
                 <span className="flex items-center gap-1">
-                    <span className="w-3 h-3 rounded bg-pinky-400" /> Busy
-                </span>
-                <span className="flex items-center gap-1">
                     <span className="w-3 h-3 rounded bg-green-500" /> Free / Booking available
                 </span>
                 <span className="flex items-center gap-1">
-                    <span className="w-3 h-3 rounded bg-red-500" /> Closed (Wed)
+                    <span className="w-3 h-3 rounded bg-pinky-400" /> Busy / Booked
+                </span>
+                <span className="flex items-center gap-1">
+                    <span className="w-3 h-3 rounded bg-red-500" /> Company holiday (Wed)
                 </span>
             </div>
         </div>
