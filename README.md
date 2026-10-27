@@ -1,4 +1,4 @@
-                                                                 ##  Pinky Planning Assistant 
+##  Pinky Planning Assistant 
 
 ## Overview
 
