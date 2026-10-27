@@ -3,6 +3,38 @@
 import { useEffect, useState } from "react";
 import type { Review } from "@/lib/types";
 
+function Avatar({ name, imageUrl }: { name: string; imageUrl: string | null }) {
+    const [failed, setFailed] = useState(false);
+    const initial = name.trim().charAt(0).toUpperCase() || "?";
+    const isValidUrl = !!imageUrl && /^https?:\/\//i.test(imageUrl) && !failed;
+
+    // Deterministic pastel color from name
+    const hue = (name.charCodeAt(0) * 47) % 360;
+    const bg = `hsl(${hue}, 70%, 88%)`;
+    const fg = `hsl(${hue}, 45%, 35%)`;
+
+    if (isValidUrl) {
+        return (
+            <img
+                src={imageUrl!}
+                alt={name}
+                className="w-12 h-12 rounded-full bg-pinky-100 shrink-0 object-cover"
+                onError={() => setFailed(true)}
+            />
+        );
+    }
+
+    return (
+        <div
+            className="w-12 h-12 rounded-full shrink-0 flex items-center justify-center font-semibold text-lg select-none"
+            style={{ backgroundColor: bg, color: fg }}
+            aria-label={name}
+        >
+            {initial}
+        </div>
+    );
+}
+
 export default function ReviewsPage() {
     const [reviews, setReviews] = useState<Review[]>([]);
     const [name, setName] = useState("");
@@ -13,8 +45,10 @@ export default function ReviewsPage() {
 
     useEffect(() => {
         fetch("/api/reviews")
-            .then((r) => r.json())
-            .then(setReviews);
+            .then((r) => r.text())
+            .then((text) => (text.trim() ? JSON.parse(text) : []))
+            .then(setReviews)
+            .catch(() => setReviews([]));
     }, []);
 
     async function submit(e: React.FormEvent) {
@@ -28,9 +62,7 @@ export default function ReviewsPage() {
                 body: JSON.stringify({
                     name,
                     username,
-                    image_url:
-                        imageUrl ||
-                        `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(name)}`,
+                    image_url: imageUrl.trim() || null,
                     review,
                 }),
             });
@@ -55,11 +87,7 @@ export default function ReviewsPage() {
                         key={r.id}
                         className="bg-white border border-pinky-200 rounded-2xl p-4 shadow-sm flex gap-3"
                     >
-                        <img
-                            src={r.image_url || `https://api.dicebear.com/9.x/adventurer/svg?seed=${r.name}`}
-                            alt={r.name}
-                            className="w-12 h-12 rounded-full bg-pinky-100 shrink-0"
-                        />
+                        <Avatar name={r.name} imageUrl={r.image_url} />
                         <div className="min-w-0">
                             <p className="font-semibold text-gray-800 text-sm">{r.name}</p>
                             <p className="text-xs text-gray-500 mb-1">{r.username}</p>
@@ -98,7 +126,7 @@ export default function ReviewsPage() {
                 <input
                     value={imageUrl}
                     onChange={(e) => setImageUrl(e.target.value)}
-                    placeholder="Image URL (optional — auto-generated if blank)"
+                    placeholder="Image URL (optional — leave blank for auto avatar)"
                     className="w-full px-3 py-2 border border-pinky-200 rounded-xl text-sm"
                 />
                 <textarea
