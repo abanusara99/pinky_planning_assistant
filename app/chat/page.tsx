@@ -1,6 +1,6 @@
 "use client";
+import { useState, useEffect } from "react";
 
-import { useState } from "react";
 import type { PlanType } from "@/lib/types";
 
 type Step = "greeting" | "confirmPlan" | "dateTime" | "success";
@@ -20,12 +20,14 @@ export default function ChatPage() {
     const [submitting, setSubmitting] = useState(false);
     const [popup, setPopup] = useState(false);
 
-    const greeting = () => {
+    const [greeting, setGreeting] = useState("Hello, how can I help you?");
+
+    useEffect(() => {
         const hour = new Date().getHours();
         const part =
             hour < 12 ? "morning" : hour < 17 ? "afternoon" : hour < 21 ? "evening" : "night";
-        return `Good ${part}, how can I help you?`;
-    };
+        setGreeting(`Good ${part}, how can I help you?`);
+    }, []);
 
     function confirmPlan(plan: (typeof plans)[0]) {
         setSelectedPlan(plan);
@@ -58,7 +60,7 @@ export default function ChatPage() {
             <div className="bg-white border border-pinky-200 rounded-2xl shadow-sm p-6 space-y-5">
                 {step === "greeting" && (
                     <>
-                        <Bubble role="ai">{greeting()}</Bubble>
+                        <Bubble role="ai">{greeting}</Bubble>
                         <Bubble role="user">I want to book a plan for my event.</Bubble>
                         <Bubble role="ai">Choose your plan:</Bubble>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -145,8 +147,8 @@ function Bubble({ role, children }: { role: "ai" | "user"; children: React.React
     return (
         <div
             className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm whitespace-pre-wrap ${role === "user"
-                    ? "bg-pinky-200 text-gray-800 ml-auto rounded-br-sm"
-                    : "bg-gray-100 text-gray-800 rounded-bl-sm"
+                ? "bg-pinky-200 text-gray-800 ml-auto rounded-br-sm"
+                : "bg-gray-100 text-gray-800 rounded-bl-sm"
                 }`}
         >
             {children}
