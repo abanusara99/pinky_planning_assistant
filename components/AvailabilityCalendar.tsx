@@ -29,6 +29,7 @@ export default function AvailabilityCalendar({ busyDates, onToggle }: Props) {
     // Base year/month as a stable placeholder; real value set after mount.
     const [base, setBase] = useState<{ year: number; month: number } | null>(null);
     const [tooltip, setTooltip] = useState<string | null>(null);
+    const [activeKey, setActiveKey] = useState<string | null>(null);
 
     useEffect(() => {
         const now = new Date();
@@ -65,8 +66,11 @@ export default function AvailabilityCalendar({ busyDates, onToggle }: Props) {
 
     const isAdmin = typeof onToggle === "function";
 
+    // Green = free, Pink = busy, Wednesday = red ring with white center (holiday)
     function colorClass(cell: DayCell) {
-        if (cell.isWednesday) return "bg-red-500 text-white cursor-pointer";
+        if (cell.isWednesday) {
+            return "bg-white text-red-600 border-2 border-red-500 cursor-not-allowed";
+        }
         if (cell.status === "busy") return "bg-pinky-400 text-white cursor-pointer";
         return "bg-green-500 text-white cursor-pointer";
     }
@@ -86,20 +90,29 @@ export default function AvailabilityCalendar({ busyDates, onToggle }: Props) {
             return;
         }
         // User mode: hard navigation so it reliably works on Vercel.
-        if (cell.isWednesday) {
-            window.location.href = `/chat?date=${cell.key}&closed=1`;
-        } else if (cell.status === "busy") {
+        // Wednesdays are not clickable.
+        if (cell.isWednesday) return;
+        if (cell.status === "busy") {
             window.location.href = `/chat?date=${cell.key}&busy=1`;
         } else {
             window.location.href = `/chat?date=${cell.key}`;
         }
     }
 
+    function showInline(cell: DayCell) {
+        setActiveKey(cell.key);
+        setTooltip(`${cell.key}|${tooltipFor(cell)}`);
+    }
+
+    const activeCell = cells.find((c) => c && c.key === activeKey) || null;
+
     return (
-        <div className="bg-white border border-pinky-200 rounded-2xl p-4 shadow-sm">
+        <div className="bg-white border border-pinky-200 rounded-2xl p-3 sm:p-4 shadow-sm">
             <div className="flex items-center justify-between mb-3">
-                <h2 className="font-semibold text-gray-800">Availability Calendar</h2>
-                <div className="flex items-center gap-2">
+                <h2 className="font-semibold text-gray-800 text-sm sm:text-base">
+                    Availability Calendar
+                </h2>
+                <div className="flex items-center gap-1 sm:gap-2">
                     <button
                         onClick={() => setOffset((o) => o - 1)}
                         className="px-2 py-1 text-xs border border-pinky-200 rounded-lg hover:bg-pinky-50"
@@ -107,7 +120,7 @@ export default function AvailabilityCalendar({ busyDates, onToggle }: Props) {
                     >
                         ‹
                     </button>
-                    <span className="text-xs text-gray-600 min-w-27.5 text-center">
+                    <span className="text-xs text-gray-600 min-w-20 sm:min-w-27.5 text-center">
                         {monthLabel || "Loading…"}
                     </span>
                     <button
@@ -124,7 +137,7 @@ export default function AvailabilityCalendar({ busyDates, onToggle }: Props) {
                 {WEEKDAYS.map((d) => (
                     <div
                         key={d}
-                        className="text-center text-[10px] font-semibold text-gray-500 py-1"
+                        className="text-center text-[9px] sm:text-[10px] font-semibold text-gray-500 py-1"
                     >
                         {d}
                     </div>
@@ -134,26 +147,34 @@ export default function AvailabilityCalendar({ busyDates, onToggle }: Props) {
             <div className="grid grid-cols-7 gap-1">
                 {cells.length === 0
                     ? Array.from({ length: 35 }).map((_, i) => (
-                        <div key={`ph-${i}`} className="aspect-square rounded-lg bg-gray-50" />
+                        <div
+                            key={`ph-${i}`}
+                            className="aspect-square rounded-lg bg-gray-50"
+                        />
                     ))
                     : cells.map((cell, i) => {
                         if (!cell) return <div key={`empty-${i}`} />;
+                        const disabled = cell.isWednesday; // never clickable
                         return (
                             <div key={cell.key} className="relative">
                                 <button
-                                    onClick={() => handleClick(cell)}
+                                    onClick={() => {
+                                        showInline(cell);
+                                        handleClick(cell);
+                                    }}
                                     onMouseEnter={() =>
                                         setTooltip(`${cell.key}|${tooltipFor(cell)}`)
                                     }
                                     onMouseLeave={() => setTooltip(null)}
-                                    disabled={isAdmin && cell.isWednesday}
-                                    className={`w-full aspect-square rounded-lg text-xs font-semibold flex items-center justify-center transition ${colorClass(cell)}`}
+                                    disabled={disabled}
+                                    className={`w-full aspect-square rounded-lg text-[10px] sm:text-xs font-semibold flex items-center justify-center transition ${colorClass(cell)}`}
                                     aria-label={tooltipFor(cell)}
                                 >
                                     {cell.date.getDate()}
                                 </button>
+                                {/* Desktop hover tooltip only */}
                                 {tooltip?.startsWith(cell.key + "|") && (
-                                    <div className="absolute z-20 -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md shadow-lg pointer-events-none">
+                                    <div className="hidden sm:block absolute z-20 -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md shadow-lg pointer-events-none">
                                         {tooltip.split("|")[1]}
                                     </div>
                                 )}
@@ -162,7 +183,12 @@ export default function AvailabilityCalendar({ busyDates, onToggle }: Props) {
                     })}
             </div>
 
-            <div className="flex flex-wrap gap-3 mt-3 text-[11px] text-gray-600">
+            {/* Inline status for touch devices */}
+            <div className="mt-2 min-h-5 text-center text-xs text-gray-600 sm:hidden">
+                {activeCell ? tooltipFor(activeCell) : "Tap a day for details"}
+            </div>
+
+            <div className="flex flex-wrap gap-2 sm:gap-3 mt-3 text-[10px] sm:text-[11px] text-gray-600">
                 <span className="flex items-center gap-1">
                     <span className="w-3 h-3 rounded bg-green-500" /> Free / Booking available
                 </span>
@@ -170,7 +196,8 @@ export default function AvailabilityCalendar({ busyDates, onToggle }: Props) {
                     <span className="w-3 h-3 rounded bg-pinky-400" /> Busy / Booked
                 </span>
                 <span className="flex items-center gap-1">
-                    <span className="w-3 h-3 rounded bg-red-500" /> Company holiday (Wed)
+                    <span className="w-3 h-3 rounded border-2 border-red-500 bg-white" />{" "}
+                    Company holiday (Wed)
                 </span>
             </div>
         </div>

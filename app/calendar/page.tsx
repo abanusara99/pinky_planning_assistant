@@ -20,35 +20,17 @@ export default function CalendarPage() {
             .catch(() => setBusyDates([]));
     }, []);
 
-    async function toggle(date: string) {
-        const isBusy = busyDates.includes(date);
-        setBusyDates((prev) =>
-            isBusy ? prev.filter((d) => d !== date) : [...prev, date]
-        );
-        try {
-            await fetch("/api/availability", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ date, status: isBusy ? "free" : "busy" }),
-            });
-        } catch {
-            // revert on failure
-            setBusyDates((prev) =>
-                isBusy ? [...prev, date] : prev.filter((d) => d !== date)
-            );
-        }
-    }
-
     return (
         <div className="max-w-3xl mx-auto px-4 py-10">
             <h1 className="text-2xl font-bold text-gray-800 mb-6 text-center">
                 Booking Availability
             </h1>
             <p className="text-xs text-gray-500 text-center mb-4">
-                Hover a day for details. Click a green or pink day to toggle booking
-                availability. Wednesdays are company holidays.
+                Tap or hover a day for details. Click a green day to open the booking form.
+                Pink days are already booked. Wednesdays are company holidays.
             </p>
-            <AvailabilityCalendar busyDates={busyDates} onToggle={toggle} />
+            {/* No onToggle — this is user mode. Clicking never changes local state. */}
+            <AvailabilityCalendar busyDates={busyDates} />
         </div>
     );
 }
