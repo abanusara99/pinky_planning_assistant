@@ -58,7 +58,7 @@ export default function ReviewsPage() {
                         <img
                             src={r.image_url || `https://api.dicebear.com/9.x/adventurer/svg?seed=${r.name}`}
                             alt={r.name}
-                            className="w-12 h-12 rounded-full bg-pinky-100 flex-shrink-0"
+                            className="w-12 h-12 rounded-full bg-pinky-100 shrink-0"
                         />
                         <div className="min-w-0">
                             <p className="font-semibold text-gray-800 text-sm">{r.name}</p>
