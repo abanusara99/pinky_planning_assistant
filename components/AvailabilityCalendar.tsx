@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 interface DayCell {
     date: Date;
@@ -25,10 +25,19 @@ function fmt(d: Date) {
 
 export default function AvailabilityCalendar({ busyDates, onToggle }: Props) {
     const [offset, setOffset] = useState(0);
+    // Base year/month start as a stable placeholder; real value set after mount.
+    const [base, setBase] = useState<{ year: number; month: number } | null>(null);
+
+    useEffect(() => {
+        const now = new Date();
+        setBase({ year: now.getFullYear(), month: now.getMonth() });
+    }, []);
 
     const { monthLabel, cells } = useMemo(() => {
-        const now = new Date();
-        const ref = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+        if (!base) {
+            return { monthLabel: "", cells: [] as (DayCell | null)[] };
+        }
+        const ref = new Date(base.year, base.month + offset, 1);
         const year = ref.getFullYear();
         const month = ref.getMonth();
         const firstDay = new Date(year, month, 1).getDay();
@@ -51,7 +60,7 @@ export default function AvailabilityCalendar({ busyDates, onToggle }: Props) {
             monthLabel: ref.toLocaleString("en-US", { month: "long", year: "numeric" }),
             cells: list,
         };
-    }, [offset, busyDates]);
+    }, [base, offset, busyDates]);
 
     function colorClass(cell: DayCell) {
         if (cell.isWednesday) return "bg-red-500 text-white cursor-not-allowed";
@@ -72,7 +81,7 @@ export default function AvailabilityCalendar({ busyDates, onToggle }: Props) {
                         ‹
                     </button>
                     <span className="text-xs text-gray-600 min-w-27.5 text-center">
-                        {monthLabel}
+                        {monthLabel || "Loading…"}
                     </span>
                     <button
                         onClick={() => setOffset((o) => o + 1)}
@@ -93,26 +102,30 @@ export default function AvailabilityCalendar({ busyDates, onToggle }: Props) {
             </div>
 
             <div className="grid grid-cols-7 gap-1">
-                {cells.map((cell, i) => {
-                    if (!cell) return <div key={`empty-${i}`} />;
-                    return (
-                        <button
-                            key={cell.key}
-                            disabled={cell.isWednesday}
-                            onClick={() => !cell.isWednesday && onToggle(cell.key)}
-                            className={`aspect-square rounded-lg text-xs font-semibold flex items-center justify-center transition ${colorClass(cell)}`}
-                            title={
-                                cell.isWednesday
-                                    ? "Closed on Wednesdays"
-                                    : cell.status === "busy"
-                                        ? "Busy — click to free"
-                                        : "Free — click to mark busy"
-                            }
-                        >
-                            {cell.date.getDate()}
-                        </button>
-                    );
-                })}
+                {cells.length === 0
+                    ? Array.from({ length: 35 }).map((_, i) => (
+                        <div key={`ph-${i}`} className="aspect-square rounded-lg bg-gray-50" />
+                    ))
+                    : cells.map((cell, i) => {
+                        if (!cell) return <div key={`empty-${i}`} />;
+                        return (
+                            <button
+                                key={cell.key}
+                                disabled={cell.isWednesday}
+                                onClick={() => !cell.isWednesday && onToggle(cell.key)}
+                                className={`aspect-square rounded-lg text-xs font-semibold flex items-center justify-center transition ${colorClass(cell)}`}
+                                title={
+                                    cell.isWednesday
+                                        ? "Closed on Wednesdays"
+                                        : cell.status === "busy"
+                                            ? "Busy — click to free"
+                                            : "Free — click to mark busy"
+                                }
+                            >
+                                {cell.date.getDate()}
+                            </button>
+                        );
+                    })}
             </div>
 
             <div className="flex flex-wrap gap-3 mt-3 text-[11px] text-gray-600">
