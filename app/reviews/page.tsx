@@ -8,7 +8,6 @@ function Avatar({ name, imageUrl }: { name: string; imageUrl: string | null }) {
   const initial = name.trim().charAt(0).toUpperCase() || "?";
   const isValidUrl = !!imageUrl && /^https?:\/\//i.test(imageUrl) && !failed;
 
-  // Deterministic pastel color from name
   const hue = (name.charCodeAt(0) * 47) % 360;
   const bg = `hsl(${hue}, 70%, 88%)`;
   const fg = `hsl(${hue}, 45%, 35%)`;
@@ -78,13 +77,13 @@ export default function ReviewsPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-10 space-y-8">
-      <h1 className="text-2xl font-bold text-gray-800 text-center">Reviews</h1>
+    <div className="max-w-3xl mx-auto px-4 py-10">
+      <h1 className="text-2xl font-bold text-gray-800 text-center mb-8">Reviews</h1>
 
-      {/* FEEDBACK FORM (top) */}
+      {/* 1) WRITING FORM — FIRST */}
       <form
         onSubmit={submit}
-        className="bg-white border border-pinky-200 rounded-2xl p-6 shadow-sm space-y-3"
+        className="bg-white border border-pinky-200 rounded-2xl p-6 shadow-sm space-y-3 mb-10"
       >
         <h2 className="font-semibold text-gray-800">Leave a Review</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -126,7 +125,8 @@ export default function ReviewsPage() {
         </button>
       </form>
 
-      {/* EXISTING REVIEWS (bottom) */}
+      {/* 2) EXISTING REVIEWS — BELOW FORM */}
+      <h2 className="font-semibold text-gray-800 mb-3">What people are saying</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {reviews.map((r) => (
           <div
